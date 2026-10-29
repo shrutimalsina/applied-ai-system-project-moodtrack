@@ -48,6 +48,51 @@ def main() -> None:
         },
     }
 
+    # Adversarial / edge-case profiles meant to "trick" the scoring logic
+    adversarial_profiles = {
+        # Conflicting prefs: very high energy but a sad mood
+        "Sad Raver (conflict)": {
+            "favorite_genre": "edm",
+            "favorite_mood": "melancholy",
+            "target_energy": 0.9,
+            "target_valence": 0.2,
+            "likes_acoustic": False,
+        },
+        # Genre that is not in the catalog, so genre points never apply
+        "Unknown Genre (k-pop)": {
+            "favorite_genre": "k-pop",
+            "favorite_mood": "happy",
+            "target_energy": 0.7,
+            "target_valence": 0.8,
+            "likes_acoustic": False,
+        },
+        # Capitalized genre/mood: exact string match may silently fail
+        "Case Mismatch (Pop/Happy)": {
+            "favorite_genre": "Pop",
+            "favorite_mood": "Happy",
+            "target_energy": 0.8,
+            "target_valence": 0.8,
+            "likes_acoustic": False,
+        },
+        # Energy outside the 0-1 range
+        "Out-of-Range Energy (1.5)": {
+            "favorite_genre": "metal",
+            "favorite_mood": "angry",
+            "target_energy": 1.5,
+            "target_valence": 0.2,
+            "likes_acoustic": False,
+        },
+        # Wants sad, acoustic pop, but every pop song in the catalog is upbeat
+        "Sad Acoustic Pop (conflict)": {
+            "favorite_genre": "pop",
+            "favorite_mood": "melancholy",
+            "target_energy": 0.3,
+            "target_valence": 0.1,
+            "likes_acoustic": True,
+        },
+    }
+    profiles.update(adversarial_profiles)
+
     for name, user_prefs in profiles.items():
         recommendations = recommend_songs(user_prefs, songs, k=5)
 
@@ -59,7 +104,7 @@ def main() -> None:
         print("=" * 60)
         for rank, (song, score, explanation) in enumerate(recommendations, start=1):
             print(f"{rank}. {song['title']} by {song['artist']}")
-            print(f"   Score: {score:.2f} / 4.50")
+            print(f"   Score: {score:.2f} / 6.50")
             for reason in explanation.split(", "):
                 print(f"   - {reason}")
             print()
