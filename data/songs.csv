@@ -1,24 +1,24 @@
-id,title,artist,genre,mood,energy,tempo_bpm,valence,danceability,acousticness
-1,Sunrise City,Neon Echo,pop,happy,0.82,118,0.84,0.79,0.18
-2,Midnight Coding,LoRoom,lofi,chill,0.42,78,0.56,0.62,0.71
-3,Storm Runner,Voltline,rock,intense,0.91,152,0.48,0.66,0.10
-4,Library Rain,Paper Lanterns,lofi,chill,0.35,72,0.60,0.58,0.86
-5,Gym Hero,Max Pulse,pop,intense,0.93,132,0.77,0.88,0.05
-6,Spacewalk Thoughts,Orbit Bloom,ambient,chill,0.28,60,0.65,0.41,0.92
-7,Coffee Shop Stories,Slow Stereo,jazz,relaxed,0.37,90,0.71,0.54,0.89
-8,Night Drive Loop,Neon Echo,synthwave,moody,0.75,110,0.49,0.73,0.22
-9,Focus Flow,LoRoom,lofi,focused,0.40,80,0.59,0.60,0.78
-10,Rooftop Lights,Indigo Parade,indie pop,happy,0.76,124,0.81,0.82,0.35
-11,Velvet Hours,Amber June,r&b,romantic,0.55,92,0.68,0.74,0.40
-12,Crown the Block,Kid Static,hip hop,confident,0.80,95,0.62,0.90,0.08
-13,Moonlit Etude,Clara Voss,classical,peaceful,0.18,66,0.45,0.20,0.97
-14,Dirt Road Postcard,Willow Creek Band,country,nostalgic,0.58,100,0.70,0.63,0.65
-15,Iron Verdict,Grave Signal,metal,angry,0.97,168,0.22,0.45,0.03
-16,Neon Euphoria,Pulse Theory,edm,euphoric,0.95,128,0.88,0.92,0.02
-17,Paper Boats,Hollow Pines,folk,melancholy,0.30,84,0.25,0.42,0.90
-18,Island Time,Sunny Roots,reggae,carefree,0.60,76,0.85,0.80,0.45
-19,Golden Hour Crush,Lila Bright,pop,happy,0.72,116,0.90,0.81,0.25
-20,Late Night Cipher,Kid Static,hip hop,moody,0.62,88,0.40,0.85,0.12
-21,Bassline Sunrise,Pulse Theory,edm,happy,0.88,124,0.83,0.89,0.04
-22,Winter Strings,Elena Marsh,classical,melancholy,0.25,70,0.28,0.18,0.95
-23,Pit Storm,Grave Signal,metal,intense,0.94,160,0.35,0.50,0.04
+id,title,artist,genre,mood,energy,tempo_bpm,valence,danceability,acousticness,popularity,release_decade,mood_tags,instrumentalness,explicit
+1,Sunrise City,Neon Echo,pop,happy,0.82,118,0.84,0.79,0.18,85,2020,uplifting;sunny,0.05,false
+2,Midnight Coding,LoRoom,lofi,chill,0.42,78,0.56,0.62,0.71,60,2020,cozy;focused,0.90,false
+3,Storm Runner,Voltline,rock,intense,0.91,152,0.48,0.66,0.10,70,2000,aggressive;driving,0.20,false
+4,Library Rain,Paper Lanterns,lofi,chill,0.35,72,0.60,0.58,0.86,55,2010,cozy;rainy,0.92,false
+5,Gym Hero,Max Pulse,pop,intense,0.93,132,0.77,0.88,0.05,88,2020,pumped;aggressive,0.03,true
+6,Spacewalk Thoughts,Orbit Bloom,ambient,chill,0.28,60,0.65,0.41,0.92,40,2010,dreamy;floating,0.95,false
+7,Coffee Shop Stories,Slow Stereo,jazz,relaxed,0.37,90,0.71,0.54,0.89,45,1990,cozy;warm,0.70,false
+8,Night Drive Loop,Neon Echo,synthwave,moody,0.75,110,0.49,0.73,0.22,62,1980,nostalgic;dark,0.60,false
+9,Focus Flow,LoRoom,lofi,focused,0.40,80,0.59,0.60,0.78,58,2020,focused;calm,0.88,false
+10,Rooftop Lights,Indigo Parade,indie pop,happy,0.76,124,0.81,0.82,0.35,72,2010,uplifting;sunny,0.10,false
+11,Velvet Hours,Amber June,r&b,romantic,0.55,92,0.68,0.74,0.40,66,2000,romantic;smooth,0.05,false
+12,Crown the Block,Kid Static,hip hop,confident,0.80,95,0.62,0.90,0.08,80,2020,confident;swagger,0.02,true
+13,Moonlit Etude,Clara Voss,classical,peaceful,0.18,66,0.45,0.20,0.97,35,1970,peaceful;dreamy,0.98,false
+14,Dirt Road Postcard,Willow Creek Band,country,nostalgic,0.58,100,0.70,0.63,0.65,50,1990,nostalgic;warm,0.10,false
+15,Iron Verdict,Grave Signal,metal,angry,0.97,168,0.22,0.45,0.03,48,1990,aggressive;dark,0.15,true
+16,Neon Euphoria,Pulse Theory,edm,euphoric,0.95,128,0.88,0.92,0.02,82,2010,euphoric;pumped,0.40,false
+17,Paper Boats,Hollow Pines,folk,melancholy,0.30,84,0.25,0.42,0.90,38,2000,sad;nostalgic,0.15,false
+18,Island Time,Sunny Roots,reggae,carefree,0.60,76,0.85,0.80,0.45,57,1970,sunny;carefree,0.20,false
+19,Golden Hour Crush,Lila Bright,pop,happy,0.72,116,0.90,0.81,0.25,90,2020,uplifting;romantic,0.04,false
+20,Late Night Cipher,Kid Static,hip hop,moody,0.62,88,0.40,0.85,0.12,68,2010,dark;swagger,0.03,true
+21,Bassline Sunrise,Pulse Theory,edm,happy,0.88,124,0.83,0.89,0.04,75,2020,euphoric;sunny,0.50,false
+22,Winter Strings,Elena Marsh,classical,melancholy,0.25,70,0.28,0.18,0.95,33,2000,sad;calm,0.97,false
+23,Pit Storm,Grave Signal,metal,intense,0.94,160,0.35,0.50,0.04,52,2010,aggressive;pumped,0.20,true

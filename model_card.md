@@ -36,6 +36,8 @@ Every song gets a score. The higher the score, the better the match.
 
 The best possible score is 6.5. The program scores every song, sorts them from highest to lowest, and shows the top 5 with the reasons for each score.
 
+**Advanced features (Challenge 1):** songs also have popularity, release decade, mood tags, how instrumental they are, and an explicit flag. If a user sets these preferences, a song can earn up to 2.5 more points (max 9.0), and explicit songs lose 1.0 point if the user does not allow them. If the user does not set them, nothing changes.
+
 **Changes from the starter:** I wrote the scoring and ranking logic, added valence and acousticness to the score, and made every recommendation explain its points.
 
 ---
@@ -46,6 +48,7 @@ The best possible score is 6.5. The program scores every song, sorts them from h
 - 15 genres: pop, lofi, rock, edm, metal, hip hop, classical, ambient, jazz, synthwave, indie pop, r&b, country, folk and reggae.
 - 14 moods, including happy, chill, intense, melancholy, moody, angry and romantic.
 - Most genres have only 1 or 2 songs. Pop and lofi have the most (3 each).
+- Each song also has popularity (0 to 100), release decade, 1 or 2 mood tags, instrumentalness (0 to 1) and an explicit flag. I made up these values, since the songs are fictional.
 - Missing: lyrics, language, artist popularity, release year, and many genres (k-pop, latin, blues and more).
 
 ---
@@ -75,6 +78,8 @@ Other weaknesses:
 ## 7. Evaluation Process  
 
 ### Profiles tested
+
+*Note: the numbers in this section were measured with the 5 core features, before the advanced features were added. After adding them, Happy Pop's Gym Hero problem is mostly fixed: it is explicit and has no matching mood tags, so it drops from #3 to #5. The edge-case profiles do not use advanced preferences, so their results did not change.*
 
 - **Normal:** Happy Pop, Intense Rock, Chill Lofi.
 - **Tricky:** Sad Raver (high energy + sad), Unknown Genre (k-pop), Case Mismatch ("Pop"/"Happy"), Out-of-Range Energy (1.5), Sad Acoustic Pop.

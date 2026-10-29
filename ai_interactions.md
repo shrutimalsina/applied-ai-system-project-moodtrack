@@ -10,19 +10,35 @@
 
 **What task did you give the agent?**
 
-<!-- Describe the goal you asked the agent to accomplish -->
+I used Claude Code (in VS Code) to do Challenge 1 (advanced song features) and Challenge 4 (summary table). The goal was to add 5 new song attributes, make the scoring use them, and show the results in a readable table that includes the reasons for each score.
 
 **Prompts used:**
 
-<!-- Paste the key prompts you gave the agent -->
+- "Introduce 5 or more complex attributes to your dataset that are not currently present in the baseline data, such as Song Popularity (0-100), Release Decade, or Detailed Mood Tags. Update both data/songs.csv and the scoring logic in src/recommender.py so scoring accounts for the new attributes."
+- "Improve the readability of your terminal output by providing a formatted table or summary... Ensure the table includes the 'reasons' for each score."
+- When asked which challenges to do, I picked "1: New song features" and "4: Summary table".
 
 **What did the agent generate or change?**
 
-<!-- List the files edited, code generated, or commands run -->
+- `data/songs.csv`: added 5 columns for all 23 songs: `popularity`, `release_decade`, `mood_tags` (e.g. `cozy;rainy`), `instrumentalness` and `explicit`.
+- `src/recommender.py`:
+  - added the new fields to `Song` and `UserProfile`, with defaults so the old tests still work
+  - made `load_songs` convert the new columns
+  - added scoring rules: up to +0.5 popularity, +0.5 decade, +1.0 mood tags, +0.5 instrumental, and -1.0 for explicit songs when not allowed
+  - new preferences are optional, so profiles without them score the same as before
+- `src/main.py`:
+  - added advanced preferences to the 3 normal profiles
+  - added `max_score()` so each profile shows the right maximum (6.5 or 9.0)
+  - added `print_table()`, a plain ASCII table with one reason per line, with no new library needed
+- `README.md` and `model_card.md`: documented the new features and re-pasted the output.
 
 **What did you verify or fix manually?**
 
-<!-- Describe anything the agent got wrong or that required human review -->
+- Checked one score by hand: Sunrise City for Happy Pop = 6.42 (core) + 0.50 popularity + 0.5 decade + 1.0 tags + 0.425 instrumental = 8.845, shown as 8.85. ✅
+- Checked that the 5 edge-case profiles (which set no advanced preferences) give exactly the same songs and scores as before. ✅
+- Ran `pytest`: 2 passed. ✅
+- Checked that the results make sense: Gym Hero (explicit, "intense") dropped from #3 to #5 for Happy Pop, which matches my earlier feeling that it did not belong at #3.
+- The new values in `songs.csv` were made up by the AI, since the songs are fictional. I reviewed them to make sure they fit each song (e.g. metal songs are "aggressive", lofi songs are "cozy" and instrumental).
 
 ---
 
