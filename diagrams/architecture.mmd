@@ -43,12 +43,13 @@ flowchart LR
     TESTS -.-> RETRIEVE
     TESTS -.-> RANK
     TESTS -.-> SAFETY
+    TESTS -.-> MAP
     EVAL -.-> USER
 
     classDef built fill:#d4edda,stroke:#2e7d32,color:#000
     classDef planned fill:#fff3cd,stroke:#e69500,color:#000
     classDef human fill:#d6e4ff,stroke:#1f4fbf,color:#000
 
-    class RAW,CLEAN,CAT,EMO_DATA,TRAIN,MODEL,RETRIEVE,RANK,TESTS,VALID,SAFETY,HELP built
-    class ANALYZE,MAP,PLAN,CRITIC,EXPLAIN,OUT,LOGS,EVAL planned
+    class RAW,CLEAN,CAT,EMO_DATA,TRAIN,MODEL,RETRIEVE,RANK,TESTS,VALID,SAFETY,HELP,ANALYZE,MAP built
+    class PLAN,CRITIC,EXPLAIN,OUT,LOGS,EVAL planned
     class USER,CLARIFY human
