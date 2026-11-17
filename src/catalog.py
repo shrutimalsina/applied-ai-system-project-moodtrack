@@ -91,6 +91,9 @@ class Catalog:
             # Calm targets lean acoustic unless the user said otherwise
             "likes_acoustic": energy < 0.4 if likes_acoustic is None else likes_acoustic,
             "allow_explicit": retrieve_kwargs.get("allow_explicit", True),
+            # Use the original scorer's popularity bonus so people get songs
+            # they might recognize (trade-off: favors mainstream artists)
+            "target_popularity": 80,
         }
         ranked = recommend_songs(user_prefs, candidates, k=k)
         return [{**song, "score": score, "reasons": reasons} for song, score, reasons in ranked]
