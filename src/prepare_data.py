@@ -6,9 +6,16 @@ Run from the project root:
 Reads:  data/raw/spotify-tracks-dataset.csv   (original Kaggle download, untouched)
 Writes: data/tracks_clean.csv                  (deduplicated, mood-labeled catalog)
 
-Mood labels come from Russell's circumplex model of affect, which places
-emotions on two axes: valence (negative -> positive) and arousal/energy
-(calm -> excited). Spotify's valence and energy features map onto these axes.
+How moods are labeled: every song has two Spotify numbers from 0 to 1.
+  - valence: how positive the song sounds (0 = sad, 1 = happy)
+  - energy:  how intense the song feels  (0 = calm, 1 = loud and fast)
+Splitting both in half gives four moods:
+
+                  calm (energy < 0.5)   energetic (energy >= 0.5)
+  positive        peaceful              happy
+  negative        melancholy            intense
+
+This idea comes from a psychology model of emotions (Russell, 1980).
 """
 
 import argparse
@@ -27,7 +34,7 @@ log = logging.getLogger("prepare_data")
 
 
 def label_mood(valence: float, energy: float) -> str:
-    """Map a song's valence/energy to one of four circumplex quadrants."""
+    """Turn a song's valence and energy into one of four mood words."""
     if valence >= 0.5:
         return "happy" if energy >= 0.5 else "peaceful"
     return "intense" if energy >= 0.5 else "melancholy"

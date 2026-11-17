@@ -7,9 +7,12 @@ Data: "Emotions dataset for NLP" (Kaggle, praveengovi, CC BY-SA 4.0), built from
 Saravia et al. 2018, "CARER: Contextualized Affect Representations for Emotion
 Recognition". 20,000 English sentences, each labeled with one of six emotions.
 
-Model: TF-IDF word features + logistic regression (scikit-learn). Simple, fast,
-deterministic, and it gives a probability for every emotion, which we use as a
-confidence score.
+How it works, in two steps:
+  1. TF-IDF turns each sentence into numbers by counting its words, giving more
+     weight to telling words ("hopeless") than common ones ("the").
+  2. Logistic regression learns which words go with which emotion.
+It trains in seconds, gives the same answer every time, and returns a
+percentage for every emotion, which we use as the model's confidence.
 """
 
 import json
@@ -52,13 +55,16 @@ def build_pipeline(c: float) -> Pipeline:
 
 
 def train() -> Dict:
-    """Pick the best setting on the validation set, then report honest test-set scores."""
+    """Train on the train set, pick the best setting using the validation set,
+    then check the final model ONCE on the test set it has never seen."""
     x_train, y_train = load_split("train")
     x_val, y_val = load_split("val")
     x_test, y_test = load_split("test")
     log.info("Loaded %d train / %d validation / %d test sentences", len(x_train), len(x_val), len(x_test))
 
-    # Try a few regularization strengths and keep the one that does best on validation
+    # C controls how closely the model fits the training data (too close = memorizing).
+    # Try a few values and keep the one that does best on the validation set.
+    # "F1" is a score from 0 to 1 that balances right guesses and missed ones, averaged over all 6 emotions.
     best_c, best_f1, best_model = None, -1.0, None
     for c in [1.0, 3.0, 10.0, 30.0]:
         model = build_pipeline(c).fit(x_train, y_train)

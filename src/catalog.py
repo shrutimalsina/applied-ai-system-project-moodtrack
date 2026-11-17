@@ -1,9 +1,11 @@
 """Song catalog + retriever.
 
 The cleaned Kaggle catalog has 80,000+ songs, too many to score one by one on
-every request. The retriever narrows it down to a few hundred songs close to a
-target point on the valence/energy mood map, then the ORIGINAL Module 1-3
-scorer (recommender.recommend_songs) ranks those candidates.
+every request. So it works in two steps:
+  1. Retriever: picks the few hundred songs whose valence (happy vs. sad) and
+     energy (calm vs. intense) are closest to the mood we're looking for.
+  2. Ranker: the ORIGINAL Module 1-3 scorer (recommender.recommend_songs)
+     scores those songs and puts the best ones first.
 
     catalog (80k) --retrieve--> candidates (~300) --score_song--> top songs
 """
