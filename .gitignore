@@ -13,3 +13,6 @@ venv/
 
 # Pytest cache
 .pytest_cache/
+
+# MoodTrack run logs and agent traces (example traces are kept in docs instead)
+logs/

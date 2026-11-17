@@ -52,17 +52,23 @@ class MoodReading:
     mood: str                   # happy / peaceful / intense / melancholy
     needs_check: bool           # True if the model isn't sure enough
 
-    def describe(self) -> str:
-        second = list(self.emotions)[1]
-        return (f"You seem mostly {self.top_emotion} ({self.confidence:.0%} sure), "
-                f"with some {second} ({self.emotions[second]:.0%}).")
-
 
 def blend_top_two(emotions: Dict[str, float]) -> Tuple[float, float]:
-    """Weighted average of the two most likely emotions' home spots."""
-    (first, p1), (second, p2) = list(emotions.items())[:2]
+    """Weighted average of the two most likely emotions' home spots.
+
+    Only blends when both emotions are on the same side (both positive or both
+    negative). Averaging "happy" and "sad" would land on "neutral", which is
+    neither, so in that case we use the top emotion alone.
+    """
+    items = list(emotions.items())
+    first, p1 = items[0]
     v1, e1 = EMOTION_POINTS[first]
+    if len(items) < 2:
+        return v1, e1
+    second, p2 = items[1]
     v2, e2 = EMOTION_POINTS[second]
+    if (v1 >= 0.5) != (v2 >= 0.5):
+        return v1, e1
     total = p1 + p2
     return round((v1 * p1 + v2 * p2) / total, 3), round((e1 * p1 + e2 * p2) / total, 3)
 

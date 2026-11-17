@@ -150,8 +150,9 @@ def fix(problems: List[Tuple[str, int]], songs: List[Optional[Dict]], settings: 
 
 def describe_point(valence: float, energy: float) -> str:
     """Plain-word description of a spot on the mood grid."""
-    feel = ("very sad" if valence < 0.2 else "low" if valence < 0.4 else
-            "neutral" if valence < 0.6 else "upbeat" if valence < 0.8 else "very happy")
+    # "dark" covers sad AND angry/tense music; "bright" covers happy and cheerful
+    feel = ("very dark" if valence < 0.2 else "dark" if valence < 0.4 else
+            "in-between" if valence < 0.6 else "bright" if valence < 0.8 else "very bright")
     pace = ("very calm" if energy < 0.2 else "calm" if energy < 0.4 else
             "medium-energy" if energy < 0.6 else "energetic" if energy < 0.8 else "very intense")
     return f"{feel}, {pace}"

@@ -27,10 +27,14 @@ def test_unsure_model_asks_user_to_check():
     assert read_mood("exams tomorrow", model).needs_check
 
 
-def test_blend_is_between_the_two_emotions():
-    valence, energy = blend_top_two({"joy": 0.5, "sadness": 0.5})
-    assert EMOTION_POINTS["sadness"][0] < valence < EMOTION_POINTS["joy"][0]
-    assert EMOTION_POINTS["sadness"][1] < energy < EMOTION_POINTS["joy"][1]
+def test_blend_is_between_two_emotions_on_the_same_side():
+    valence, energy = blend_top_two({"anger": 0.5, "sadness": 0.5})
+    assert EMOTION_POINTS["sadness"][1] < energy < EMOTION_POINTS["anger"][1]
+
+
+def test_opposite_emotions_are_not_averaged_into_neutral():
+    # "great day at the beach": joy 29%, sadness 27% should stay on the happy side
+    assert blend_top_two({"joy": 0.29, "sadness": 0.27, "anger": 0.19}) == EMOTION_POINTS["joy"]
 
 
 def test_user_correction_is_trusted():
