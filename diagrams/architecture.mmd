@@ -1,58 +1,64 @@
-%% MoodTrack system architecture (DRAFT - will be updated to match the final code)
-%% Green = built, Orange = planned
-%% Preview: paste into https://mermaid.live
-
-flowchart LR
-    %% ---------- Offline: data + model preparation ----------
-    subgraph PREP["Offline setup (run once)"]
-        RAW["Kaggle Spotify Tracks<br/>114k rows"] --> CLEAN["prepare_data.py<br/>clean, dedupe, label mood"]
+%% MoodTrack system architecture
+flowchart TB
+    subgraph PREP["Data and model preparation"]
+        direction LR
+        RAW["Spotify Tracks dataset"] --> CLEAN["prepare_data.py<br/>clean tracks and label moods"]
         CLEAN --> CAT[("tracks_clean.csv<br/>80,200 songs")]
-        EMO_DATA["Kaggle Emotions dataset<br/>20k labeled sentences"] --> TRAIN["emotion_model.py<br/>train TF-IDF + LogReg"]
-        TRAIN --> MODEL[("emotion_model.joblib<br/>baseline + backup")]
-    end
-    HF[("Pretrained emotion model<br/>DistilRoBERTa - Hugging Face<br/>main mood reader")]
-
-    %% ---------- Runtime: one user request ----------
-    subgraph RUN["MoodTrack agent (one request)"]
-        USER(["User writes a journal entry"]) --> VALID["Input validation<br/>empty / too short / too long"]
-        VALID --> SAFETY{"Safety check<br/>signs of distress?"}
-        SAFETY -- yes --> HELP(["Support resources<br/>no playlist"])
-        SAFETY -- no --> ANALYZE["Analyze<br/>emotions + confidence<br/>+ not-guard for not okay"]
-        HF -.-> ANALYZE
-        MODEL -. backup .-> ANALYZE
-        ANALYZE --> MAP["Map emotions to a point<br/>on the valence / energy grid"]
-        MAP --> CLARIFY{{"HUMAN CHECK<br/>user confirms or corrects mood<br/>and picks a goal"}}
-        CLARIFY --> PLAN["Planner<br/>iso principle: 5-step arc<br/>from current mood to goal"]
-        PLAN --> RETRIEVE["Retriever - catalog.py<br/>songs near each step"]
-        CAT -.-> RETRIEVE
-        RETRIEVE --> RANK["Ranker - original<br/>Module 1-3 score_song"]
-        RANK --> CRITIC{"Critic<br/>arc moves toward goal?<br/>no repeats / explicit?"}
-        CRITIC -- fails --> PLAN
-        CRITIC -- passes --> EXPLAIN["Explainer<br/>reason for each song"]
-        EXPLAIN --> OUT(["Playlist + reasons"])
+        EMO["Emotions dataset for NLP"] --> TRAIN["emotion_model.py<br/>train baseline model"]
+        TRAIN --> BASE[("emotion_model.joblib")]
     end
 
-    %% ---------- Logging and testing ----------
-    subgraph CHECK["Logging and testing"]
-        LOGS[("logs/ + agent traces")]
-        TESTS["pytest unit tests"]
-        EVAL["eval.py<br/>labeled journal entries:<br/>accuracy, safety, arc checks"]
+    HF[("Downloaded DistilRoBERTa model")]
+    ENTRY(["Journal entry"])
+
+    subgraph APP["MoodTrack · src/moodtrack.py"]
+        VALID{"Entry valid?<br/>Long entries are trimmed"}
+        INVALID(["Ask for more text"])
+        SAFETY{"Crisis phrase matched?"}
+        HELP(["Show support message<br/>and stop"])
+        READER["Read emotion scores<br/>use baseline if main model fails to load"]
+        MOOD["Map feelings to the mood grid<br/>flag low confidence or negated positives"]
+        MODE{"Interactive?"}
+        HUMAN["User confirms or corrects mood<br/>and chooses a goal"]
+        SCRIPT["Use supplied mood and goal if given<br/>otherwise use model guess and suggested goal"]
+
+        VALID -- no --> INVALID
+        VALID -- yes --> SAFETY
+        SAFETY -- yes --> HELP
+        SAFETY -- no --> READER
+        READER --> MOOD --> MODE
+        MODE -- yes --> HUMAN
+        MODE -- no --> SCRIPT
     end
 
-    PLAN -.-> LOGS
-    CRITIC -.-> LOGS
-    TESTS -.-> CLEAN
-    TESTS -.-> RETRIEVE
-    TESTS -.-> RANK
-    TESTS -.-> SAFETY
-    TESTS -.-> MAP
-    TESTS -.-> CRITIC
-    EVAL -.-> USER
+    subgraph AGENT["Playlist agent · src/agent.py"]
+        PLAN["Plan five points from starting mood to goal"]
+        PICK["Find nearby songs in catalog.py<br/>rank with original score_song"]
+        CHECK{"Critic checks catalog, mood path,<br/>artist repeats and explicit tracks"}
+        FIX["Adjust search settings"]
+        EXPLAIN["Explain each song"]
+        PLAN --> PICK --> CHECK
+        CHECK -- "fails and can retry" --> FIX --> PICK
+        CHECK -- "passes or retries end" --> EXPLAIN
+    end
 
-    classDef built fill:#d4edda,stroke:#2e7d32,color:#000
-    classDef planned fill:#fff3cd,stroke:#e69500,color:#000
-    classDef human fill:#d6e4ff,stroke:#1f4fbf,color:#000
+    ENTRY --> VALID
+    HF -.-> READER
+    BASE -.-> READER
+    HUMAN --> PLAN
+    SCRIPT --> PLAN
+    CAT -.-> PICK
+    EXPLAIN --> OUT(["Playlist, reasons and critic result"])
+    EXPLAIN --> TRACE[("logs/traces/<br/>agent steps and rule results")]
 
-    class RAW,CLEAN,CAT,EMO_DATA,TRAIN,MODEL,HF,RETRIEVE,RANK,TESTS,VALID,SAFETY,HELP,ANALYZE,MAP,PLAN,CRITIC,EXPLAIN,LOGS,OUT built
-    class EVAL planned
-    class USER,CLARIFY human
+    subgraph EVALUATION["Evaluation"]
+        CASES[("evaluation/journal_entries.csv")] --> EVAL["evaluate.py<br/>compare readers and check guards and playlists"]
+        EVAL --> REPORT[("evaluation/results.md")]
+    end
+    EVAL -. "checks entry handling" .-> VALID
+    EVAL -. "runs playlist twice" .-> PLAN
+
+    classDef storage fill:#ecf5ed,stroke:#44805b,color:#173728
+    classDef choice fill:#edf2ff,stroke:#506cad,color:#182952
+    class CAT,BASE,HF,TRACE,CASES,REPORT storage
+    class ENTRY,HUMAN,OUT,INVALID,HELP choice

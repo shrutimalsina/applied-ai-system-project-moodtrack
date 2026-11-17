@@ -16,3 +16,6 @@ venv/
 
 # MoodTrack run logs and agent traces (example traces are kept in docs instead)
 logs/
+
+# Personal handoff notes (not part of the project)
+HANDOFF.md

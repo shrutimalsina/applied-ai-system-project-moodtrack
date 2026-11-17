@@ -1,5 +1,14 @@
 # AI Interactions Log
 
+## MoodTrack playlist agent
+
+I used AI to design a five-step playlist and a critic that checks each result. The agent plans a path through the mood grid, ranks nearby tracks, checks the playlist, and changes its settings if a check fails. The traces show the steps the program took. They contain mood labels, track choices, and rule results.
+
+- **Sadness → feel a bit better.** The first attempt picked an explicit track at step 2. The critic flagged it, the agent turned off explicit tracks, and the second attempt passed with Arcade at step 2. [Two-attempt trace](examples/traces/sadness-lift.md)
+- **Joy → get energized.** The first playlist passed all critic checks, so the agent returned it after one attempt. [First-attempt trace](examples/traces/joy-energize.md)
+
+## Earlier Music Recommender Simulation work
+
 > **Stretch features only.** Only fill in the sections that apply to stretch features you attempted. If you did not attempt a stretch feature, leave its section blank or delete it. This file is not required for the core project.
 
 ---
