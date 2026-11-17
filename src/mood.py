@@ -10,6 +10,7 @@ most likely emotions to get the writer's current mood.
 """
 
 import logging
+import re
 from dataclasses import dataclass
 from typing import Dict, Optional, Tuple
 
@@ -25,10 +26,13 @@ EMOTION_POINTS: Dict[str, Tuple[float, float]] = {
     "anger":    (0.15, 0.85),
     "fear":     (0.20, 0.70),
     "sadness":  (0.15, 0.25),
-    # The model can't detect "calm" (its training data had no calm label),
-    # but users can pick it when they correct their mood.
+    "disgust":  (0.15, 0.60),
+    "neutral":  (0.55, 0.40),   # no strong feeling either way
+    # No model detects "calm", but users can pick it when they correct their mood.
     "calm":     (0.65, 0.25),
 }
+
+POSITIVE_EMOTIONS = {"joy", "love", "surprise", "neutral", "calm"}
 
 # Where each listening goal ends up on the grid. "stay" means stay where you are.
 GOALS: Dict[str, Tuple[str, Optional[Tuple[float, float]]]] = {
@@ -40,6 +44,16 @@ GOALS: Dict[str, Tuple[str, Optional[Tuple[float, float]]]] = {
 
 # Below this confidence, the app asks the user to confirm their mood
 CONFIDENCE_THRESHOLD = 0.50
+# Below this, the model really can't tell, so the app doesn't offer a guess at all
+UNSURE_THRESHOLD = 0.35
+
+# "Not" guard: phrases like "not okay" or "don't feel happy". AI models often
+# miss the "not" and read these as positive, sometimes 99% sure.
+NEGATED_POSITIVE = re.compile(
+    r"\b(not|never|dont|do not|didnt|isnt|wasnt|arent|cant|cannot|no longer)\s+"
+    r"(really\s+|feel(ing)?\s+|doing\s+|very\s+|so\s+|that\s+|at all\s+)*"
+    r"(happy|good|okay|ok|fine|great|well|alright|better|excited|myself)\b"
+)
 
 
 @dataclass
@@ -50,7 +64,9 @@ class MoodReading:
     valence: float
     energy: float
     mood: str                   # happy / peaceful / intense / melancholy
-    needs_check: bool           # True if the model isn't sure enough
+    needs_check: bool           # True if the user should confirm the mood
+    unsure: bool = False        # True if the model can't tell at all (no guess offered)
+    reason: str = ""            # why the user is being asked, in plain words
 
 
 def blend_top_two(emotions: Dict[str, float]) -> Tuple[float, float]:
@@ -78,6 +94,16 @@ def read_mood(text: str, model) -> MoodReading:
     emotions = model.predict(text)
     top_emotion, confidence = next(iter(emotions.items()))
     valence, energy = blend_top_two(emotions)
+
+    # Decide whether to trust the guess, ask the user to confirm it, or not offer it at all
+    unsure, reason = False, ""
+    if confidence < UNSURE_THRESHOLD:
+        unsure, reason = True, "I couldn't tell clearly how you're feeling."
+    elif top_emotion in POSITIVE_EMOTIONS and NEGATED_POSITIVE.search(_normalize(text)):
+        unsure, reason = True, "You wrote something like 'not okay' or 'don't feel happy', which I can easily misread."
+    elif confidence < CONFIDENCE_THRESHOLD:
+        reason = "I'm not very sure about this one."
+
     reading = MoodReading(
         emotions=emotions,
         top_emotion=top_emotion,
@@ -85,11 +111,17 @@ def read_mood(text: str, model) -> MoodReading:
         valence=valence,
         energy=energy,
         mood=label_mood(valence, energy),
-        needs_check=confidence < CONFIDENCE_THRESHOLD,
+        needs_check=bool(reason),
+        unsure=unsure,
+        reason=reason,
     )
-    log.info("Mood: top=%s (%.2f) -> valence=%.2f energy=%.2f (%s), needs_check=%s",
-             top_emotion, confidence, valence, energy, reading.mood, reading.needs_check)
+    log.info("Mood: top=%s (%.2f) -> valence=%.2f energy=%.2f (%s), needs_check=%s, unsure=%s",
+             top_emotion, confidence, valence, energy, reading.mood, reading.needs_check, reading.unsure)
     return reading
+
+
+def _normalize(text: str) -> str:
+    return re.sub(r"\s+", " ", text.lower().replace("\u2019", "'").replace("'", ""))
 
 
 def correct_mood(emotion: str) -> MoodReading:

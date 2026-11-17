@@ -24,7 +24,7 @@ def test_confident_sadness_lands_in_melancholy():
 
 def test_unsure_model_asks_user_to_check():
     model = FakeModel({"anger": 0.4, "sadness": 0.35, "joy": 0.25})
-    assert read_mood("exams tomorrow", model).needs_check
+    assert read_mood("exams tomorrow tonight", model).needs_check
 
 
 def test_blend_is_between_two_emotions_on_the_same_side():
@@ -52,3 +52,42 @@ def test_stay_goal_keeps_current_mood():
 def test_unknown_emotion_is_rejected(bad):
     with pytest.raises(ValueError):
         correct_mood(bad)
+
+
+# ---------- "Not" guard and "couldn't tell" ----------
+
+@pytest.mark.parametrize("entry", [
+    "i dont feel happy at all",
+    "I am not okay",
+    "honestly I'm not doing well",
+    "I don’t feel good today",
+    "i cant feel happy anymore",
+])
+def test_negated_positive_is_not_trusted(entry):
+    # The model says joy 99%, but the entry says "not happy" -> don't trust it
+    reading = read_mood(entry, FakeModel({"joy": 0.99, "sadness": 0.01}))
+    assert reading.unsure
+    assert "not okay" in reading.reason
+
+
+def test_negation_guard_ignores_negative_predictions():
+    # If the model already says sadness, "not okay" agrees with it: nothing to flag
+    reading = read_mood("I am not okay", FakeModel({"sadness": 0.88, "fear": 0.12}))
+    assert not reading.needs_check
+
+
+def test_happy_entry_without_negation_is_trusted():
+    reading = read_mood("I can't stop smiling today", FakeModel({"joy": 0.97, "surprise": 0.03}))
+    assert not reading.needs_check
+
+
+def test_near_tie_means_model_cannot_tell():
+    reading = read_mood("my sister is fighting with me",
+                        FakeModel({"love": 0.24, "joy": 0.23, "anger": 0.22, "sadness": 0.21, "fear": 0.1}))
+    assert reading.unsure
+    assert "couldn't tell" in reading.reason
+
+
+def test_neutral_and_disgust_have_grid_spots():
+    assert read_mood("just a normal day today", FakeModel({"neutral": 0.9, "joy": 0.1})).mood == "peaceful"
+    assert read_mood("that was so gross honestly", FakeModel({"disgust": 0.9, "anger": 0.1})).mood == "intense"

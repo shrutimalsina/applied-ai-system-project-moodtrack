@@ -14,13 +14,14 @@ Everything the app does is logged to logs/moodtrack.log (without your journal te
 import argparse
 import logging
 import sys
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
 from src.agent import PlaylistResult, build_playlist, describe_point
 from src.catalog import Catalog
-from src.emotion_model import EmotionModel
+from src.emotion_model import load_emotion_reader
 from src.mood import EMOTION_POINTS, GOALS, MoodReading, correct_mood, read_mood, suggest_goal
 from src.safety import check_distress, validate_entry
 
@@ -50,8 +51,12 @@ class MoodTrack:
 
     def __init__(self):
         self.catalog = Catalog()
-        self.model = EmotionModel()
         self.genres = set(self.catalog.df["genre"])
+
+    @property
+    def model(self):
+        # Loaded once and shared; may already be loading in the background
+        return load_emotion_reader()
 
     def check_entry(self, entry: Optional[str]) -> EntryCheck:
         """Validate -> safety check -> read mood. Stops early if something is wrong."""
@@ -73,12 +78,17 @@ class MoodTrack:
 def show_reading(reading: MoodReading) -> None:
     emotions = list(reading.emotions.items())
     print("\nWhat I picked up from your entry:")
+    if reading.unsure:
+        # Don't present a shaky guess as if it were an answer
+        print(f"  {reading.reason}")
+        print("  My best guesses were: " + ", ".join(f"{e} ({p:.0%})" for e, p in emotions[:3]))
+        return
     print(f"  Strongest feeling: {emotions[0][0]} ({emotions[0][1]:.0%} sure)")
     if len(emotions) > 1:
         print("  Also present:      " + ", ".join(f"{e} ({p:.0%})" for e, p in emotions[1:3]))
     print(f"  Mood: {reading.mood} ({describe_point(reading.valence, reading.energy)})")
     if reading.needs_check:
-        print("  I'm not very sure about this one, so please check it.")
+        print(f"  {reading.reason} Please check it.")
 
 
 def show_playlist(result: PlaylistResult, reading: MoodReading, goal: str) -> None:
@@ -105,9 +115,13 @@ def ask(prompt: str) -> str:
 def ask_mood(reading: MoodReading) -> MoodReading:
     choices = ", ".join(EMOTION_POINTS)
     while True:
-        answer = ask(f"\nIs that right? Press Enter for yes, or type how you feel ({choices}): ")
-        if answer in ("", "y", "yes"):
-            return reading
+        if reading.unsure:
+            # No default here: the user has to say how they feel
+            answer = ask(f"\nHow are you feeling? Type one of: {choices}: ")
+        else:
+            answer = ask(f"\nIs that right? Press Enter for yes, or type how you feel ({choices}): ")
+            if answer in ("", "y", "yes"):
+                return reading
         if answer in EMOTION_POINTS:
             return correct_mood(answer)
         print(f"  Sorry, I don't know '{answer}'. Try one of: {choices}")
@@ -160,6 +174,8 @@ def main(argv=None) -> int:
 
     print("MoodTrack - a playlist for how you feel")
     if interactive:
+        # Load the AI model in the background while the user types (it takes a few seconds)
+        threading.Thread(target=load_emotion_reader, daemon=True).start()
         entry = input("\nWrite a few sentences about how you're feeling today:\n> ")
     else:
         entry = args.entry
@@ -183,6 +199,8 @@ def main(argv=None) -> int:
         print(f"  Mood set by you: {args.mood}")
     elif interactive:
         reading = ask_mood(reading)
+    elif reading.unsure:
+        print("  Using my best guess. Add --mood to set it yourself.")
 
     goal = args.goal or (ask_goal(reading) if interactive else suggest_goal(reading))
     genre = args.genre.lower()

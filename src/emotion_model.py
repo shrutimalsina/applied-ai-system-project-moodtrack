@@ -1,6 +1,16 @@
-"""Emotion classifier: reads a journal entry and predicts how the writer feels.
+"""Emotion readers: read a journal entry and predict how the writer feels.
 
-Train it (from the project root):
+There are two readers:
+  1. PretrainedEmotionModel (MAIN): a ready-made AI model that someone else
+     trained on six kinds of real writing (Reddit, tweets, TV dialogue, and
+     people describing events in their lives). Downloaded on first use.
+  2. EmotionModel (BASELINE + BACKUP): the small model trained in this project.
+     It scores 88% on its own test sentences but does much worse on everyday
+     journal writing, because its training data is almost all tweets that start
+     with "i feel...". It is kept for comparison, and as a backup if the main
+     model can't be loaded.
+
+Train the baseline model (from the project root):
     python -m src.emotion_model
 
 Data: "Emotions dataset for NLP" (Kaggle, praveengovi, CC BY-SA 4.0), built from
@@ -16,6 +26,8 @@ percentage for every emotion, which we use as the model's confidence.
 """
 
 import json
+import os
+import threading
 import logging
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -94,7 +106,9 @@ def train() -> Dict:
 
 
 class EmotionModel:
-    """Loads the trained model and predicts emotions with confidence scores."""
+    """The baseline model trained in this project. Predicts 6 emotions with confidence scores."""
+
+    name = "baseline (trained in this project)"
 
     def __init__(self, path: Path = MODEL_PATH):
         if not path.exists():
@@ -108,6 +122,72 @@ class EmotionModel:
         probs = self.pipeline.predict_proba([text.lower()])[0]
         ranked = sorted(zip(self.pipeline.classes_, probs), key=lambda p: p[1], reverse=True)
         return {str(emotion): round(float(p), 3) for emotion, p in ranked}
+
+
+PRETRAINED_NAME = "j-hartmann/emotion-english-distilroberta-base"
+
+
+class PretrainedEmotionModel:
+    """Main reader: "Emotion English DistilRoBERTa-base" by Jochen Hartmann (2022).
+
+    https://huggingface.co/j-hartmann/emotion-english-distilroberta-base
+    Predicts 7 labels: anger, disgust, fear, joy, neutral, sadness, surprise.
+    It's a transformer, the same basic technology as ChatGPT but much smaller,
+    so it reads words in context instead of just counting them.
+    """
+
+    name = "pretrained (DistilRoBERTa emotion model)"
+
+    def __init__(self, model_name: str = PRETRAINED_NAME):
+        if self.is_downloaded(model_name):
+            # Already on this computer: don't check the internet (faster, works offline)
+            os.environ["HF_HUB_OFFLINE"] = "1"
+        else:
+            print("Downloading the emotion model for the first time (about 330 MB, only once)...")
+
+        # PyTorch prints a harmless macOS-only warning when it loads; hide it
+        logging.getLogger("torch.distributed.elastic.multiprocessing.redirects").setLevel(logging.ERROR)
+
+        # Imported here so the rest of the app still works if these aren't installed
+        from transformers import pipeline
+        from transformers.utils import logging as hf_logging
+
+        hf_logging.set_verbosity_error()      # hide download/progress messages
+        hf_logging.disable_progress_bar()
+        self.pipeline = pipeline("text-classification", model=model_name, top_k=None)
+
+    @staticmethod
+    def is_downloaded(model_name: str) -> bool:
+        """True if the model files are already in the Hugging Face download folder."""
+        hf_home = Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface"))
+        folder = hf_home / "hub" / ("models--" + model_name.replace("/", "--")) / "snapshots"
+        return folder.exists() and any(folder.iterdir())
+
+    def predict(self, text: str) -> Dict[str, float]:
+        """Return {emotion: probability}, highest first. Probabilities add up to 1."""
+        scores = self.pipeline(text[:2000], truncation=True)[0]
+        ranked = sorted(scores, key=lambda s: s["score"], reverse=True)
+        return {s["label"]: round(float(s["score"]), 3) for s in ranked}
+
+
+_reader = None
+_reader_lock = threading.Lock()  # the app may start loading in the background
+
+
+def load_emotion_reader():
+    """Load the main model once; if that fails, fall back to the baseline model."""
+    global _reader
+    with _reader_lock:
+        if _reader is None:
+            try:
+                reader = PretrainedEmotionModel()
+                reader.predict("warm up")  # the first prediction is slow, so do it now
+            except Exception as error:  # not installed, no internet on first run, etc.
+                log.warning("Pretrained model unavailable (%s); using baseline model instead", error)
+                reader = EmotionModel()
+            _reader = reader
+            log.info("Emotion reader: %s", _reader.name)
+    return _reader
 
 
 if __name__ == "__main__":
