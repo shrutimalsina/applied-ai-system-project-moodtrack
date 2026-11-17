@@ -1,0 +1,53 @@
+%% MoodTrack system architecture (DRAFT - will be updated to match the final code)
+%% Green = built, Orange = planned
+%% Preview: paste into https://mermaid.live
+
+flowchart LR
+    %% ---------- Offline: data + model preparation ----------
+    subgraph PREP["Offline setup (run once)"]
+        RAW["Kaggle Spotify Tracks<br/>114k rows"] --> CLEAN["prepare_data.py<br/>clean, dedupe, label mood"]
+        CLEAN --> CAT[("tracks_clean.csv<br/>80,200 songs")]
+        EMO_DATA["Kaggle Emotions dataset<br/>20k labeled sentences"] --> TRAIN["emotion_model.py<br/>train TF-IDF + LogReg"]
+        TRAIN --> MODEL[("emotion_model.joblib<br/>88% test accuracy")]
+    end
+
+    %% ---------- Runtime: one user request ----------
+    subgraph RUN["MoodTrack agent (one request)"]
+        USER(["User writes a journal entry"]) --> VALID["Input validation<br/>empty / too short / too long"]
+        VALID --> SAFETY{"Safety check<br/>signs of distress?"}
+        SAFETY -- yes --> HELP(["Support resources<br/>no playlist"])
+        SAFETY -- no --> ANALYZE["Analyze<br/>emotion model predicts<br/>emotions + confidence"]
+        MODEL -.-> ANALYZE
+        ANALYZE --> MAP["Map emotions to a point<br/>on the valence / energy grid"]
+        MAP --> CLARIFY{{"HUMAN CHECK<br/>user confirms or corrects mood<br/>and picks a goal"}}
+        CLARIFY --> PLAN["Planner<br/>iso principle: 5-step arc<br/>from current mood to goal"]
+        PLAN --> RETRIEVE["Retriever - catalog.py<br/>songs near each step"]
+        CAT -.-> RETRIEVE
+        RETRIEVE --> RANK["Ranker - original<br/>Module 1-3 score_song"]
+        RANK --> CRITIC{"Critic<br/>arc moves toward goal?<br/>no repeats / explicit?"}
+        CRITIC -- fails --> PLAN
+        CRITIC -- passes --> EXPLAIN["Explainer<br/>reason for each song"]
+        EXPLAIN --> OUT(["Playlist + reasons"])
+    end
+
+    %% ---------- Logging and testing ----------
+    subgraph CHECK["Logging and testing"]
+        LOGS[("logs/ + agent traces")]
+        TESTS["pytest unit tests"]
+        EVAL["eval.py<br/>labeled journal entries:<br/>accuracy, safety, arc checks"]
+    end
+
+    PLAN -.-> LOGS
+    CRITIC -.-> LOGS
+    TESTS -.-> CLEAN
+    TESTS -.-> RETRIEVE
+    TESTS -.-> RANK
+    EVAL -.-> USER
+
+    classDef built fill:#d4edda,stroke:#2e7d32,color:#000
+    classDef planned fill:#fff3cd,stroke:#e69500,color:#000
+    classDef human fill:#d6e4ff,stroke:#1f4fbf,color:#000
+
+    class RAW,CLEAN,CAT,EMO_DATA,TRAIN,MODEL,RETRIEVE,RANK,TESTS built
+    class VALID,SAFETY,HELP,ANALYZE,MAP,PLAN,CRITIC,EXPLAIN,OUT,LOGS,EVAL planned
+    class USER,CLARIFY human
